@@ -269,6 +269,11 @@ public class JDGenerator
 					//Ist eine Annotation keine Funktion
 					continue;
 				}
+				if(functionLine.contains("if") || functionLine.contains("else") || functionLine.contains("switch(") || functionLine.contains("while(") || functionLine.contains("for(")  || functionLine.contains("switch (") || functionLine.contains("while (") || functionLine.contains("for ("))
+				{
+					//Ist if, else oder eine schleife
+					continue;
+				}
 				while (functionLine.startsWith("\n"))
 				{
 					functionLine = functionLine.substring(1);
