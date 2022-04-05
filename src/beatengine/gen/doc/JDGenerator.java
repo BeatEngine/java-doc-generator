@@ -246,20 +246,15 @@ public class JDGenerator
 				lineBegin--;
 			}
 			int lineBefore = lineBegin - 1;
-			while (lineBegin >= 0 && file.charAt(lineBegin) != '\n')
+			while (lineBefore >= 0 && file.charAt(lineBefore) != '}')
 			{
-				lineBegin--;
-			}
-			lineBefore--;
-			while (lineBegin >= 0 && file.charAt(lineBegin) != '\n')
-			{
-				lineBegin--;
+				lineBefore--;
 			}
 			if (lineBefore <= 0 || lineBegin <= 0 || paramBegin <= 0 || fend <= lineBegin)
 			{
 				continue;
 			}
-			if (!file.substring(lineBefore, lineBegin).contains("*/") && !file.substring(lineBefore, paramBegin).contains("="))
+			if (!file.substring(lineBefore, lineBegin).contains("*/") && !file.substring(lineBefore, lineBegin).contains("/*") && !file.substring(lineBefore, paramBegin).contains("="))
 			{
 				//Kein JavaDoc vorhanden!
 				String functionLine  = file.substring(lineBegin, fend+1);

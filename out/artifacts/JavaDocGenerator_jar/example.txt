@@ -1,0 +1,1 @@
+find ~/IdeaProjects/Protokolldroide/src/main/java/com/edag -name *.java -exec bash -c "java -jar JavaDocGenerator.jar \"{}\"" \;
