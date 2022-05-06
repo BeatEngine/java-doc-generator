@@ -17,6 +17,12 @@ import java.util.List;
 
 public class JDGenerator
 {
+
+	public static boolean isWhitespace(final char c)
+	{
+		return c == ' ' || c == '\n' || c == '\t';
+	}
+
 	private final File classFile;
 
 	private String file;
@@ -24,14 +30,18 @@ public class JDGenerator
 	private boolean loaded = false;
 
 	private int position = 0;
-	/**
-	 * Konstruktor der Klasse JDGenerator.
-	 */
+
 	public JDGenerator(final File javaFile)
 	{
 		classFile = javaFile;
 	}
 
+
+
+	/**
+	* Description
+	* 
+	*/
 	private void loadFile()
 	{
 		try
@@ -54,27 +64,40 @@ public class JDGenerator
 			fileInputStream.close();
 			loaded = true;
 		}
+
+
 		catch (FileNotFoundException e)
 		{
 			e.printStackTrace();
 		}
+
+
 		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
 	}
 
+
+
+	/**
+	* Description
+	* 
+	* @param function
+	* @return (String) 
+	*/
 	private String javadoc(final String function)
 	{
 		String fn = function;
 		String tabs = "";
-		while (fn.startsWith("\t") || fn.startsWith(" "))
+		while (!fn.isEmpty() && isWhitespace(fn.charAt(0)))
 		{
 			tabs += "\t";
 			fn = fn.substring(1);
 		}
 
 		String scope = "";
+		String syncronised = "";
 		String behaviour = "";
 		String returnType = "";
 		String name = "";
@@ -101,9 +124,15 @@ public class JDGenerator
 			fn = fn.substring(behaviour.length()+1);
 		}
 
+		if(fn.startsWith("synchronized"))
+		{
+			syncronised = "synchronized";
+			fn = fn.substring(syncronised.length()+1);
+		}
+
 		for(int r = 0; r < fn.length(); r++)
 		{
-			if(fn.charAt(r) == ' ')
+			if(isWhitespace(fn.charAt(r)))
 			{
 				if(r + 2 < fn.length() && fn.charAt(r+1) != '(' && fn.charAt(r+2) != '(' && fn.charAt(r+1) != '<' && fn.charAt(r+2) != '<')
 				{
@@ -150,7 +179,7 @@ public class JDGenerator
 					int space = 0;
 					while (psidx < p.length() && p.charAt(psidx) != '(' && p.charAt(psidx) != '=' && p.charAt(psidx) != '{')
 					{
-						if(p.charAt(psidx) == ' ')
+						if(isWhitespace(p.charAt(psidx)))
 						{
 							space = psidx;
 						}
@@ -212,15 +241,71 @@ public class JDGenerator
 		{
 			doc += tabs + "* @return (" + returnType + ") " + subName + "\n";
 		}
+		else if(!returnType.isBlank() && !returnType.equals("void"))
+		{
+			doc += tabs + "* @return (" + returnType + ") \n";
+		}
 		doc += tabs + "*/";
 		return doc;
 	}
 
+
+
+	/**
+	* Description
+	* 
+	* @param src
+	* @param posBefore
+	* @return (int) 
+	*/
+	private int findNextEndOfFunctionDeclaration(final String src, final int posBefore)
+	{
+		if(posBefore >= src.length())
+		{
+			return -1;
+		}
+		int p = posBefore;
+		int last = p;
+		while (p >= 0 && p >= last-10 && p+1 < src.length())
+		{
+			p = src.indexOf('\n', last+1);
+			last = p;
+			while (p >= 0 && p >= last-10)
+			{
+				final char c = src.charAt(p);
+				if (c == '{' || (isWhitespace(c) && c != '\n') || (p == last && isWhitespace(c)))
+				{
+					p--;
+				}
+				else if (c == ')')
+				{
+					if(p <= posBefore)
+					{
+						last++;
+						break;
+					}
+					return p;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		return -1;
+	}
+
+
+
+	/**
+	* Description
+	* 
+	*/
 	private void insertJavaDoc()
 	{
 		while (true)
 		{
-			int fend = file.indexOf(")\n", position);
+			int fend = findNextEndOfFunctionDeclaration(file, position);
 			if(fend == -1)
 			{
 				break;
@@ -264,7 +349,7 @@ public class JDGenerator
 					//Ist eine Annotation keine Funktion
 					continue;
 				}
-				if(functionLine.contains("if") || functionLine.contains("else") || functionLine.contains("switch(") || functionLine.contains("while(") || functionLine.contains("for(")  || functionLine.contains("switch (") || functionLine.contains("while (") || functionLine.contains("for ("))
+				if(functionLine.contains("if") || functionLine.contains("else") || functionLine.contains("switch(") || functionLine.contains("while(") || functionLine.contains("for(")  || functionLine.contains("switch (") || functionLine.contains("while (") || functionLine.contains("for (") || functionLine.contains("catch(") || functionLine.contains("catch ("))
 				{
 					//Ist if, else oder eine schleife
 					continue;
@@ -281,9 +366,12 @@ public class JDGenerator
 		}
 	}
 
+
+
 	/**
-	 *
-	 */
+	* Description
+	* 
+	*/
 	private void saveFile()
 	{
 		try
@@ -299,16 +387,26 @@ public class JDGenerator
 			}
 			fileOutputStream.close();
 		}
+
+
 		catch (FileNotFoundException e)
 		{
 			e.printStackTrace();
 		}
+
+
 		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
 	}
 
+
+
+	/**
+	* Description
+	* 
+	*/
 	public void generateJavaDoc()
 	{
 		loadFile();
