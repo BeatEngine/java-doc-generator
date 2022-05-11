@@ -20,7 +20,7 @@ public class JDGenerator
 
 	public static boolean isWhitespace(final char c)
 	{
-		return c == ' ' || c == '\n' || c == '\t';
+		return c == ' ' || c == '\n' || c == '\t' || c == '\r';
 	}
 
 	private final File classFile;
