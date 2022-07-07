@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class JDGenerator
 {
@@ -265,34 +267,18 @@ public class JDGenerator
 			return -1;
 		}
 		int p = posBefore;
-		int last = p;
-		while (p >= 0 && p >= last-10 && p+1 < src.length())
+
+		final String functionRegex = "(private|public|package).+\\(.+\\)";
+
+		final  Pattern pattern = Pattern.compile(functionRegex);
+
+		final Matcher matcher = pattern.matcher(src.substring(posBefore));
+		if(!matcher.find())
 		{
-			p = src.indexOf('\n', last+1);
-			last = p;
-			while (p >= 0 && p >= last-10)
-			{
-				final char c = src.charAt(p);
-				if (c == '{' || (isWhitespace(c) && c != '\n') || (p == last && isWhitespace(c)))
-				{
-					p--;
-				}
-				else if (c == ')')
-				{
-					if(p <= posBefore)
-					{
-						last++;
-						break;
-					}
-					return p;
-				}
-				else
-				{
-					break;
-				}
-			}
+			return -1;
 		}
-		return -1;
+		final String group = matcher.group(0);
+		return src.indexOf(group, posBefore);
 	}
 
 
@@ -311,39 +297,50 @@ public class JDGenerator
 				break;
 			}
 			position = fend + 1;
-			int paramBegin = fend - 1;
-			int s          = 0;
-			while (paramBegin >= 0 && (file.charAt(paramBegin) != '(' || s > 0))
+			int lineBegin = fend;
+			int paramBegin = -1;
+			int paramEnd = -1;
+			int s = 0;
+			int pc = lineBegin;
+			while (pc < file.length() && (file.charAt(pc) != '(' || s > 0 || paramBegin == -1))
 			{
-				if (file.charAt(paramBegin) == ')')
-				{
-					s++;
-				}
-				else if (file.charAt(paramBegin) == '(')
+				if (file.charAt(pc) == ')')
 				{
 					s--;
+					if(s == 0)
+					{
+						paramEnd = pc;
+						break;
+					}
 				}
-				paramBegin--;
+				else if (file.charAt(pc) == '(')
+				{
+					if(s == 0)
+					{
+						paramBegin = pc;
+					}
+					s++;
+				}
+				pc++;
 			}
-			int lineBegin = paramBegin - 1;
-			while (lineBegin >= 0 && file.charAt(lineBegin) != '\n')
-			{
-				lineBegin--;
-			}
-			int lineBefore = lineBegin - 1;
+
+			int lineBefore = lineBegin;
 			while (lineBefore >= 0 && file.charAt(lineBefore) != '}')
 			{
 				lineBefore--;
 			}
-			if (lineBefore <= 0 || lineBegin <= 0 || paramBegin <= 0 || fend <= lineBegin)
+			if (lineBefore <= 0 || lineBegin <= 0 || paramBegin <= 0 || paramEnd <= paramBegin)
 			{
 				continue;
 			}
+			lineBefore++;
+			fend = paramEnd+1;
 			if (!file.substring(lineBefore, lineBegin).contains("*/") && !file.substring(lineBefore, lineBegin).contains("/*") && !file.substring(lineBefore, paramBegin).contains("="))
 			{
 				//Kein JavaDoc vorhanden!
 				String functionLine  = file.substring(lineBegin, fend+1);
 				final int    idxAnnotation = functionLine.indexOf("@");
+				//if(true){continue;};
 				if (idxAnnotation >= 0 && idxAnnotation < 5)
 				{
 					//Ist eine Annotation keine Funktion
